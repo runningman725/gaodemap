@@ -15,6 +15,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.amap.api.services.core.PoiItem;
+import com.example.utils.Const;
+import com.example.utils.CustomDialog;
 import com.example.utils.MapUtil;
 
 import java.util.ArrayList;
@@ -53,23 +55,26 @@ public class GaoDeSearchResultAdapter extends RecyclerView.Adapter<GaoDeSearchRe
                 clickListener.onItemClick(v,pos);
             }
         });
-//        holder.iv_nav.setVisibility(position == selectedPosition ? View.VISIBLE : View.INVISIBLE);
-//        holder.itemView.setBackgroundResource(position == selectedPosition ? R.color.red_99 : R.color.white);
-//        holder.iv_nav.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                openGaoDeMap(poiItem.getLatLonPoint().getLatitude(),poiItem.getLatLonPoint().getLongitude(),poiItem.getAdName());
-//            }
-//        });
-    }
-    //高德
-    private void openGaoDeMap(double latitude, double longitude, String locationName) {
-        if (MapUtil.isGdMapInstalled()) {
-            MapUtil.openGaoDeNavi(activity, 0, 0, null, latitude, longitude, locationName);
-        } else {
-            //这里必须要写逻辑，不然如果手机没安装该应用，程序会闪退，这里可以实现下载安装该地图应用
-            Toast.makeText(activity,"尚未安装高德地图",Toast.LENGTH_SHORT);
-        }
+        holder.iv_nav.setVisibility(position == selectedPosition ? View.VISIBLE : View.INVISIBLE);
+        holder.itemView.setBackgroundResource(position == selectedPosition ? R.color.red_99 : R.color.white);
+        holder.iv_nav.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CustomDialog.showBottomDialog(activity);
+                CustomDialog.setNavMapChooseListener(new CustomDialog.OnNavMapChooseListener() {
+                    @Override
+                    public void chooseMap(String map) {
+                        if (map.equals(Const.GAODEMAP)) {
+                            MapUtil.openGaoDeMap(activity,poiItem);
+                        } else if(map.equals(Const.BAIDUMAP)){
+                            MapUtil.openBaiDuMap(activity,poiItem);
+                        } else {
+                            MapUtil.openTencentMap(activity,poiItem);
+                        }
+                    }
+                });
+            }
+        });
     }
 
     @Override

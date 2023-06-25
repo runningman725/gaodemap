@@ -114,7 +114,7 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
         super.onCreate(savedInstanceState);
         AMapLocationClient.updatePrivacyAgree(this.getApplicationContext(), true);
         AMapLocationClient.updatePrivacyShow(this.getApplicationContext(), true, true);
-        GenerateSHA1.getSHA1(this);
+//        GenerateSHA1.getSHA1(this);
         setContentView(R.layout.activity_main);
         //获取地图控件引用
         mMapView = (MapView) findViewById(R.id.map);
@@ -188,6 +188,8 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         rlv_location.setLayoutManager(layoutManager);
         rlv_location.setAdapter(searchResultAdapter);
+        searchResultAdapter.setData(resultData);
+//        doSearchQuery();
     }
 
     private void searchPoi(Tip result) {

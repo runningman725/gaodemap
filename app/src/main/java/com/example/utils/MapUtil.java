@@ -1,9 +1,18 @@
 package com.example.utils;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.widget.Toast;
+
+import com.amap.api.services.core.PoiItem;
+
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @ClassName MapUtil
@@ -20,20 +29,68 @@ public class MapUtil {
      * 检查地图应用是否安装
      * @return
      */
-    public static boolean isGdMapInstalled(){
-        return isInstallPackage(PN_GAODE_MAP);
+    public static boolean isGdMapInstalled(Activity activity){
+        return isAvilible(activity,PN_GAODE_MAP);
     }
 
-    public static boolean isBaiduMapInstalled(){
-        return isInstallPackage(PN_BAIDU_MAP);
+    public static boolean isBaiduMapInstalled(Activity activity){
+        return isAvilible(activity,PN_BAIDU_MAP);
     }
 
-    public static boolean isTencentMapInstalled(){
-        return isInstallPackage(PN_TENCENT_MAP);
+    public static boolean isTencentMapInstalled(Activity activity){
+        return isAvilible(activity,PN_TENCENT_MAP);
     }
 
-    private static boolean isInstallPackage(String packageName) {
-        return new File("/data/data/" + packageName).exists();
+    // 检索地图软件
+    public static boolean isAvilible(Context context, String packageName) {
+//获取packagemanager
+        final PackageManager packageManager = context.getPackageManager();
+//获取所有已安装程序的包信息
+        List<PackageInfo> packageInfos = packageManager.getInstalledPackages(0);
+//用于存储所有已安装程序的包名
+        List<String> packageNames = new ArrayList<String>();
+//从pinfo中将包名字逐一取出，压入pName list中
+        if (packageInfos != null) {
+            for (int i = 0; i < packageInfos.size(); i++) {
+                String packName = packageInfos.get(i).packageName;
+                packageNames.add(packName);
+            }
+        }
+//判断packageNames中是否有目标程序的包名，有TRUE，没有FALSE
+        return packageNames.contains(packageName);
+    }
+
+
+    //高德
+    public static void openGaoDeMap(Activity activity, PoiItem poiItem) {
+        if (isGdMapInstalled(activity)) {
+            openGaoDeNavi(activity, 0, 0, null, poiItem.getLatLonPoint().getLatitude(),poiItem.getLatLonPoint().getLongitude(),poiItem.getTitle());
+        } else {
+            //这里必须要写逻辑，不然如果手机没安装该应用，程序会闪退，这里可以实现下载安装该地图应用
+            Toast.makeText(activity,"尚未安装高德地图",Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    //百度
+    public static void openBaiDuMap(Activity activity, PoiItem poiItem) {
+        if (isBaiduMapInstalled(activity)) {
+            openBaiDuNavi(activity, 0, 0, null, poiItem.getLatLonPoint().getLatitude(),poiItem.getLatLonPoint().getLongitude(),poiItem.getTitle());
+        } else {
+            //这里必须要写逻辑，不然如果手机没安装该应用，程序会闪退，这里可以实现下载安装该地图应用
+            Toast.makeText(activity,"尚未安装百度地图",Toast.LENGTH_SHORT).show();
+
+        }
+    }
+
+    //腾讯
+    public static void openTencentMap(Activity activity, PoiItem poiItem) {
+        if (isTencentMapInstalled(activity)) {
+            openTencentNavi(activity, 0, 0, null, poiItem.getLatLonPoint().getLatitude(),poiItem.getLatLonPoint().getLongitude(),poiItem.getTitle());
+        } else {
+            //这里必须要写逻辑，不然如果手机没安装该应用，程序会闪退，这里可以实现下载安装该地图应用
+            Toast.makeText(activity,"尚未安装腾讯图",Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
@@ -69,44 +126,6 @@ public class MapUtil {
         bd_lat_lon[1] = z * Math.sin(theta) + 0.006;
         return bd_lat_lon;
     }
-
-//    /**
-//     * 百度坐标系 (BD-09) 与 火星坐标系 (GCJ-02)的转换
-//     * 即 百度 转 谷歌、高德
-//     *
-//     * @param latLng
-//     * @returns
-//     *
-//     * 使用此方法需要下载导入百度地图的BaiduLBS_Android.jar包
-//     */
-//    public static LatLng BD09ToGCJ02(LatLng latLng) {
-//        double x_pi = 3.14159265358979324 * 3000.0 / 180.0;
-//        double x = latLng.longitude - 0.0065;
-//        double y = latLng.latitude - 0.006;
-//        double z = Math.sqrt(x * x + y * y) - 0.00002 * Math.sin(y * x_pi);
-//        double theta = Math.atan2(y, x) - 0.000003 * Math.cos(x * x_pi);
-//        double gg_lat = z * Math.sin(theta);
-//        double gg_lng = z * Math.cos(theta);
-//        return new LatLng(gg_lat, gg_lng);
-//    }
-//
-//    /**
-//     * 火星坐标系 (GCJ-02) 与百度坐标系 (BD-09) 的转换
-//     * 即谷歌、高德 转 百度
-//     *
-//     * @param latLng
-//     * @returns
-//     *
-//     * 需要百度地图的BaiduLBS_Android.jar包
-//     */
-//    public static LatLng GCJ02ToBD09(LatLng latLng) {
-//        double x_pi = 3.14159265358979324 * 3000.0 / 180.0;
-//        double z = Math.sqrt(latLng.longitude * latLng.longitude + latLng.latitude * latLng.latitude) + 0.00002 * Math.sin(latLng.latitude * x_pi);
-//        double theta = Math.atan2(latLng.latitude, latLng.longitude) + 0.000003 * Math.cos(latLng.longitude * x_pi);
-//        double bd_lat = z * Math.sin(theta) + 0.006;
-//        double bd_lng = z * Math.cos(theta) + 0.0065;
-//        return new LatLng(bd_lat, bd_lng);
-//    }
 
     /**
      * 打开高德地图导航功能
@@ -156,7 +175,7 @@ public class MapUtil {
     policy的取值缺省为0
      * &from=" + dqAddress + "&fromcoord=" + dqLatitude + "," + dqLongitude + "
      */
-    public static void openTencentMap(Context context, double slat, double slon, String sname, double dlat, double dlon, String dname) {
+    public static void openTencentNavi(Context context, double slat, double slon, String sname, double dlat, double dlon, String dname) {
         String uriString = null;
         StringBuilder builder = new StringBuilder("qqmap://map/routeplan?type=drive&policy=0&referer=wuczh");
         if (slat != 0) {
