@@ -183,7 +183,7 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
         }
         hideSoftKey(et_keyword);
         rlv_location = findViewById(R.id.rlv_location);
-        searchResultAdapter = new GaoDeSearchResultAdapter();
+        searchResultAdapter = new GaoDeSearchResultAdapter(this);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         rlv_location.setLayoutManager(layoutManager);

@@ -25,10 +25,10 @@
     </LinearLayout>
 
     <ImageView
-        android:id="@+id/iv_checked"
+        android:id="@+id/iv_nav"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_alignParentRight="true"
-        android:src="@drawable/icon_check"/>
+        android:src="@drawable/icon_nav"/>
 
 </RelativeLayout>
