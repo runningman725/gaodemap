@@ -87,6 +87,8 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
     private boolean isItemClickAction;
     private RecyclerView rlv_location;
     private Marker locationMarker;
+    private boolean scrollList = false;
+    private boolean editText = false;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -95,14 +97,13 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
             case LOCATION_CODE: {
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // 权限被用户同意。
-                    Toast.makeText(this, "定位权限已开启！", Toast.LENGTH_LONG).show();
+                    // 권한 동의
+                    Toast.makeText(this, "위치 권한 오픈！", Toast.LENGTH_LONG).show();
 
                     initMap();
 
                 } else {
-                    // 权限被用户拒绝了。
-                    Toast.makeText(this, "定位权限被禁止，相关地图功能无法使用！", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "위치 권한 거절, 맵 기능 사용 불가！", Toast.LENGTH_LONG).show();
                 }
 
             }
@@ -114,11 +115,10 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
         super.onCreate(savedInstanceState);
         AMapLocationClient.updatePrivacyAgree(this.getApplicationContext(), true);
         AMapLocationClient.updatePrivacyShow(this.getApplicationContext(), true, true);
-//        GenerateSHA1.getSHA1(this);
+//        GenerateSHA1.getSHA1(this);   //debug버전 SHA1 값 획득
         setContentView(R.layout.activity_main);
-        //获取地图控件引用
         mMapView = (MapView) findViewById(R.id.map);
-        //在activity执行onCreate时执行mMapView.onCreate(savedInstanceState)，创建地图
+        //activity가 onCreate 집행시 mMapView.onCreate(savedInstanceState)로 지도 생성
         mMapView.onCreate(savedInstanceState);
         initView();
         resultData = new ArrayList<>();
@@ -138,30 +138,28 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
         et_keyword.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
             }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if(!s.equals("")){
-                    Log.e(TAG, "onTextChanged: "+s.toString());
-//                    setPoiSearch(s.toString()); //입력한 내용으로 주변 주소 여러개 획득
-
-                    String content = s.toString().trim();
-                    //第二个参数传入null或者“”代表在全国进行检索，否则按照传入的city进行检索
+                String content = s.toString().trim();
+                if (!scrollList) {
+                    rlv_location.setVisibility(View.GONE);
+                }
+                if(!content.equals("") && !scrollList){
+                    //두번째 param 값이 null이거나 ""이면 도시 아닌 전국 범위에서 검색
                     InputtipsQuery inputquery = new InputtipsQuery(content, locationBean.getCity());
-                    inputquery.setCityLimit(true);//限制在当前城市
+                    inputquery.setCityLimit(true);//도시 한정
                     Inputtips inputTips = new Inputtips(MainActivity.this, inputquery);
                     inputTips.setInputtipsListener(new OnInputTipsListener());
                     inputTips.requestInputtipsAsyn();
-
-
                 }
+                scrollList = false;
+                editText = true;
             }
 
             @Override
             public void afterTextChanged(Editable s) {
-
             }
         });
 
@@ -189,19 +187,19 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
         rlv_location.setLayoutManager(layoutManager);
         rlv_location.setAdapter(searchResultAdapter);
         searchResultAdapter.setData(resultData);
-//        doSearchQuery();
+
     }
 
     private void searchPoi(Tip result) {
         try {
             isInputKeySearch = true;
-            inputSearchKey = result.getName();//getAddress(); // + result.getRegeocodeAddress().getCity() + result.getRegeocodeAddress().getDistrict() + result.getRegeocodeAddress().getTownship();
+            inputSearchKey = result.getName();
             searchLatlonPoint = result.getPoint();
             firstItem = new PoiItem("tip", searchLatlonPoint, inputSearchKey, result.getAddress());
             firstItem.setCityName(result.getDistrict());
             firstItem.setAdName("");
             resultData.clear();
-//            searchResultAdapter.setSelectedPosition(0);
+            searchResultAdapter.setSelectedPosition(0);
             aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(result.getPoint().getLatitude(), result.getPoint().getLongitude()), 16f));
             hideSoftKey(et_keyword);
             doSearchQuery();
@@ -216,27 +214,26 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
     }
 
     private void initMap() {
-
-        //初始化地图控制器对象
+        //지도 공제 대상 초기화
         if (aMap == null) {
             aMap = mMapView.getMap();
         }
-        //设置地图的放缩级别
+        //지도 축소 레벨 설정
         aMap.moveCamera(CameraUpdateFactory.zoomTo(16));
-        // 设置定位监听
+        //위치 모니터링
         aMap.setLocationSource(this);
-        // 设置为true表示显示定位层并可触发定位，false表示隐藏定位层并不可触发定位，默认是false
+        // true이면 위치 촉발,디폴트는 false
         aMap.setMyLocationEnabled(true);
-        // 设置定位的类型为定位模式，有定位、跟随或地图根据面向方向旋转几种
+        // 위치 유형 설정
         aMap.setMyLocationType(AMap.LOCATION_TYPE_LOCATE);
 
-        //蓝点初始化
-        myLocationStyle = new MyLocationStyle();//初始化定位蓝点样式类myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE);//连续定位、且将视角移动到地图中心点，定位点依照设备方向旋转，并且会跟随设备移动。（1秒1次定位）如果不设置myLocationType，默认也会执行此种模式。
-        myLocationStyle.interval(2000); //设置连续定位模式下的定位间隔，只在连续定位模式下生效，单次定位模式下不会生效。单位为毫秒。
-        aMap.setMyLocationStyle(myLocationStyle);//设置定位蓝点的Style
-        //aMap.getUiSettings().setMyLocationButtonEnabled(true);设置默认定位按钮是否显示，非必需设置。
-        aMap.setMyLocationEnabled(true);// 设置为true表示启动显示定位蓝点，false表示隐藏定位蓝点并不进行定位，默认是false。
-        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE);//连续定位、且将视角移动到地图中心点，定位点依照设备方向旋转，并且会跟随设备移动。（1秒1次定位）默认执行此种模式。
+        //bluepoint 초기화
+        myLocationStyle = new MyLocationStyle();
+        myLocationStyle.interval(2000); //연속 위치 측정 시간 설정
+        aMap.setMyLocationStyle(myLocationStyle);//bluepoint style설정
+        aMap.getUiSettings().setMyLocationButtonEnabled(true); //화면 오른쪽 윗쪽에 나의 현재 위치로 이동하는 버튼 설정
+        aMap.setMyLocationEnabled(true);//bluepoint 표시 설정,false하면 위치 측정도 하지 않음
+        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE);//연속 위치 측정,디폴트 모식,1초에 한번씩 측정,bluepoint 화살 표시 방향이 설비 방향에 따라 이동
 
         myLocationStyle.showMyLocation(true);
         aMap.setOnCameraChangeListener(new AMap.OnCameraChangeListener() {
@@ -248,9 +245,9 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
             public void onCameraChangeFinish(CameraPosition cameraPosition) {
                 if (!isItemClickAction && !isInputKeySearch) {
                     geoAddress();
-//                    startJumpAnimation();
                 }
                 searchLatlonPoint = new LatLonPoint(cameraPosition.target.latitude, cameraPosition.target.longitude);
+                Log.e(TAG, "onCameraChangeFinish: searchLatlonPoint=="+searchLatlonPoint);
                 isInputKeySearch = false;
                 isItemClickAction = false;
             }
@@ -261,13 +258,7 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
                 addMarkerInScreenCenter(null);
             }
         });
-//        aMap.setOnMyLocationChangeListener(new AMap.OnMyLocationChangeListener() {
-//            @Override
-//            public void onMyLocationChange(Location location) {
-//                //从location对象中获取经纬度信息，地址描述信息，建议拿到位置之后调用逆地理编码接口获取
-//                Log.e(TAG, "onMyLocationChange: ==="+location);
-//            }
-//        });
+
     }
 
     private void addMarkerInScreenCenter(LatLng locationLatLng) {
@@ -276,16 +267,16 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
         locationMarker = aMap.addMarker(new MarkerOptions()
                 .anchor(0.5f, 0.5f)
                 .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_marker)));
-        // 设置Marker在屏幕上,不跟随地图移动
+        //marker가 지도와 함께 움직이지 않고 화면에 고정 설정
         locationMarker.setPositionByPixels(screenPosition.x, screenPosition.y);
     }
 
     /**
-     * 响应逆地理编码
+     * response inverse geocoding
      */
     public void geoAddress() {
 //        et_keyword.setText("");
-        // 第一个参数表示一个Latlng，第二参数表示范围多少米，第三个参数表示是火系坐标系还是GPS原生坐标系
+        //첫번째 param은 Latlng, 두번째 param은 m범위, 세번째 param은 좌표계 유형
         RegeocodeQuery query = new RegeocodeQuery(searchLatlonPoint, 200, GeocodeSearch.AMAP);
         geocoderSearch.getFromLocationAsyn(query);
     }
@@ -293,61 +284,56 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        //在activity执行onDestroy时执行mMapView.onDestroy()，销毁地图
         mMapView.onDestroy();
     }
     @Override
     protected void onResume() {
         super.onResume();
-        //在activity执行onResume时执行mMapView.onResume ()，重新绘制加载地图
         mMapView.onResume();
     }
     @Override
     protected void onPause() {
         super.onPause();
-        //在activity执行onPause时执行mMapView.onPause ()，暂停地图的绘制
         mMapView.onPause();
     }
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        //在activity执行onSaveInstanceState时执行mMapView.onSaveInstanceState (outState)，保存地图当前的状态
+        //지도 상태 저장
         mMapView.onSaveInstanceState(outState);
     }
 
+    //setLocationSource() 적용후 respond
     @Override
     public void activate(OnLocationChangedListener listener) {
         mListener = listener;
         if (mlocationClient == null) {
-            //初始化定位
+            //initialization positioning
             try {
                 mlocationClient = new AMapLocationClient(this);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            //初始化定位参数
+            //initialization positioning parameter
             mLocationOption = new AMapLocationClientOption();
-            //设置定位回调监听
+            //set up location callback monitoring
             mlocationClient.setLocationListener(this);
             mLocationOption.setOnceLocation(true);
-            //设置为高精度定位模式
+            //Set to High Accuracy Positioning Mode
             mLocationOption.setLocationMode(AMapLocationClientOption.AMapLocationMode.Hight_Accuracy);
-            //关闭缓存机制
+            //disable caching mechanism
             mLocationOption.setLocationCacheEnable(false);
-            //设置是否返回地址信息（默认返回地址信息）
+            //Set whether to return address information (default return address information)
             mLocationOption.setNeedAddress(true);
-            //设置定位间隔,单位毫秒,默认为2000ms，最低1000ms。
+            //Set the positioning interval in milliseconds, 2000 ms by default, 1000 ms minimum.
 //            mLocationOption.setInterval(3000);
-            //设置定位参数
+            //set positioning parameters
             mlocationClient.setLocationOption(mLocationOption);
-            // 此方法为每隔固定时间会发起一次定位请求，为了减少电量消耗或网络流量消耗，
-            // 注意设置合适的定位时间的间隔（最小间隔支持为2000ms），并且在合适时间调用stopLocation()方法来取消定位请求
-            // 在定位结束后，在合适的生命周期调用onDestroy()方法
-            // 在单次定位情况下，定位无论成功与否，都无需调用stopLocation()方法移除请求，定位sdk内部会移除
-            mlocationClient.startLocation();//启动定位
+            mlocationClient.startLocation();//start positioning
         }
     }
 
+    //setLocationSource() 적용후 respond
     @Override
     public void deactivate() {
         mListener = null;
@@ -358,18 +344,17 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
         mlocationClient = null;
     }
 
+    //setLocationListener()적용후 respond
     @Override
     public void onLocationChanged(AMapLocation amapLocation) {
         if (mListener != null&&amapLocation != null) {
             if (amapLocation != null
                     &&amapLocation.getErrorCode() == 0) {
-                    mListener.onLocationChanged(amapLocation);// 显示系统小蓝点
+                    mListener.onLocationChanged(amapLocation);
                     Log.e(TAG, "onLocationChanged: ===="+amapLocation);
                     LatLng curLatlng = new LatLng(amapLocation.getLatitude(), amapLocation.getLongitude());
-    //                aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(curLatlng, 17f));
                     searchLatlonPoint = new LatLonPoint(curLatlng.latitude, curLatlng.longitude);
                     isInputKeySearch = false;
-//                et_keyword.setText("");
 
                 LocationBean bean = new LocationBean();
                 bean.setLatitude(String.valueOf(amapLocation.getLatitude()));
@@ -398,12 +383,13 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
                 locationBean = bean;
                 Log.e(TAG, "jsonData: ==="+bean);
             } else {
-                String errText = "定位失败," + amapLocation.getErrorCode()+ ": " + amapLocation.getErrorInfo();
+                String errText = "위치 지정 실패," + amapLocation.getErrorCode()+ ": " + amapLocation.getErrorInfo();
                 Log.e("AmapErr===",errText);
             }
         }
     }
 
+    //setOnPoiSearchListener() 적용후 respond
     @Override
     public void onPoiSearched(PoiResult poiResult, int resultCode) {
         if (resultCode == AMapException.CODE_AMAP_SUCCESS) {
@@ -421,25 +407,28 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
 
     private void updateListview(ArrayList<PoiItem> poiItems) {
         resultData.clear();
-//        searchResultAdapter.setSelectedPosition(0);
         resultData.add(firstItem);
         resultData.addAll(poiItems);
         Log.e(TAG, "updateListview: resultData=="+resultData);
         searchResultAdapter.setData(resultData);
+        if (editText) {
+            rlv_location.setVisibility(View.VISIBLE);
+        }
+        searchResultAdapter.setSelectedPosition(0);
+        rlv_location.scrollToPosition(0);
         searchResultAdapter.notifyDataSetChanged();
         searchResultAdapter.setOnItemClickListener(new GaoDeSearchResultAdapter.OnLocationClickListener() {
             @Override
             public void onItemClick(View view, int position) {
                 if (position != searchResultAdapter.getSelectedPosition()) {
+                    scrollList = true;
                     PoiItem poiItem = (PoiItem) searchResultAdapter.getItem(position);
                     LatLng curLatlng = new LatLng(poiItem.getLatLonPoint().getLatitude(), poiItem.getLatLonPoint().getLongitude());
-                    // 滞空
-//                    saveClickLocationAddress = "";
-//                    saveClickLocationAddress = poiItem.getCityName() + poiItem.getAdName() + poiItem.getSnippet();
                     isItemClickAction = true;
                     aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(curLatlng, 16f));
                     searchResultAdapter.setSelectedPosition(position);
                     searchResultAdapter.notifyDataSetChanged();
+                    et_keyword.setText(poiItem.getTitle());
                 }
             }
         });
@@ -450,18 +439,21 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
 
     }
 
+    //setOnGeocodeSearchListener() 실행후 respond
     @Override
     public void onRegeocodeSearched(RegeocodeResult result, int rCode) {
-//        if (rCode == AMapException.CODE_AMAP_SUCCESS) {
-//            if (result != null && result.getRegeocodeAddress() != null
-//                    && result.getRegeocodeAddress().getFormatAddress() != null) {
-//                String address = result.getRegeocodeAddress().getProvince() + result.getRegeocodeAddress().getCity() + result.getRegeocodeAddress().getDistrict() + result.getRegeocodeAddress().getTownship();
-//                firstItem = new PoiItem("regeo", searchLatlonPoint, address, address);
-//                doSearchQuery();
-//            }
-//        }
+        if (rCode == AMapException.CODE_AMAP_SUCCESS) {
+            if (result != null && result.getRegeocodeAddress() != null
+                    && result.getRegeocodeAddress().getFormatAddress() != null) {
+                String address = result.getRegeocodeAddress().getProvince() + result.getRegeocodeAddress().getCity() + result.getRegeocodeAddress().getDistrict() + result.getRegeocodeAddress().getTownship();
+                firstItem = new PoiItem("regeo", searchLatlonPoint, address, address);
+                Log.e(TAG, "onRegeocodeSearched: address==="+address);
+                doSearchQuery();
+            }
+        }
     }
 
+    //setOnGeocodeSearchListener() 실행후 respond
     @Override
     public void onGeocodeSearched(GeocodeResult geocodeResult, int i) {
 
@@ -469,10 +461,10 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
 
     private void doSearchQuery() {
         currentPage = 0;
-        // 第一个参数表示搜索字符串，第二个参数表示poi搜索类型，第三个参数表示poi搜索区域（空字符串代表全国）
+        //첫 번째 인자는 검색 문자열을 나타내고, 두 번째 인자는 poi 검색 유형을 나타내며, 세 번째 인자는 poi 검색 영역을 나타냅니다(빈 문자열은 전국을 나타냄).
         query = new PoiSearch.Query("", "", locationBean.getCityCode());
         query.setCityLimit(true);
-        // 设置每页最多返回多少条poiitem
+        // 페이지당 최대 몇 개의 poiitem을 반환할지 설정합니다
         query.setPageSize(20);
         query.setPageNum(currentPage);
         if (searchLatlonPoint != null) {
@@ -495,7 +487,7 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
 
         @Override
         public void onGetInputtips(List<Tip> list, int code) {
-            if (code == AMapException.CODE_AMAP_SUCCESS) {// 正确返回
+            if (code == AMapException.CODE_AMAP_SUCCESS) {// 성공
                 autoTips = list;
                 List<String> listString = new ArrayList<String>();
                 for (int i = 0; i < list.size(); i++) {
@@ -505,7 +497,6 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
                         getApplicationContext(),
                         android.R.layout.simple_list_item_1, listString);
                 et_keyword.setAdapter(aAdapter);
-//                et_keyword.setText("");
                 aAdapter.notifyDataSetChanged();
                 if (isfirstinput) {
                     isfirstinput = false;

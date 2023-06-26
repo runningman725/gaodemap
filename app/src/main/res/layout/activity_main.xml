@@ -16,15 +16,17 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rlv_location"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
+        android:layout_height="260dp"
+        android:elevation="5dp"
+        android:background="@color/white"
         app:layout_constraintTop_toBottomOf="@+id/et_keyword"
-        app:layout_constraintBottom_toTopOf="@+id/map"/>
+        android:visibility="gone"/>
 
     <com.amap.api.maps.MapView
         android:id="@+id/map"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@+id/rlv_location"
+        app:layout_constraintTop_toBottomOf="@+id/et_keyword"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -20,7 +20,7 @@ import java.util.List;
 public class CheckPermissionUtil {
 
     private static final int LOCATION_CODE = 1;
-    private static LocationManager lm;//【位置管理】
+    private static LocationManager lm;//위치 관리
     private static Activity activity;
 
     private static MainActivity.OnCheckLocationPermission locationPermission;
@@ -37,26 +37,19 @@ public class CheckPermissionUtil {
         activity = mainActivity;
         lm = (LocationManager) activity.getSystemService(activity.LOCATION_SERVICE);
         boolean ok = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        if (ok) {//开了定位服务
+        if (ok) {//got a location service
             if (ContextCompat.checkSelfPermission(activity, android.Manifest.permission.ACCESS_FINE_LOCATION)
                     != PackageManager.PERMISSION_GRANTED) {
-                Log.e("BRG","没有权限");
-                // 没有权限，申请权限。
-                // 申请授权。
-//                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, LOCATION_CODE);
+                Log.e("qm","권한이 없음");
+                // 권한 신청
                 checkPermissions(needPermissions);
-                Toast.makeText(activity, "没有权限", Toast.LENGTH_SHORT).show();
 
             } else {
-                // 有权限了，去放肆吧。
-                Toast.makeText(activity, "有权限", Toast.LENGTH_SHORT).show();
-
+                // 권한이 있어요
                 locationPermission.permissionGranted();
-//                initMap();
             }
         } else {
-            Log.e("BRG","系统检测到未开启GPS定位服务");
-            Toast.makeText(activity, "系统检测到未开启GPS定位服务", Toast.LENGTH_SHORT).show();
+            Log.e("qm","GPS 위치추적 서비스가 켜지지 않는 것을 감지했습니다");
             Intent intent = new Intent();
             intent.setAction(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
             activity.startActivityForResult(intent, 1315);
@@ -64,43 +57,25 @@ public class CheckPermissionUtil {
     }
 
     private static void checkPermissions(String... permissions) {
-
         List needRequestPermissonList = findDeniedPermissions(permissions);
-
         if (null != needRequestPermissonList
-
                 && needRequestPermissonList.size() > 0) {
-
             ActivityCompat.requestPermissions(activity, (String[]) needRequestPermissonList.toArray(new String[needRequestPermissonList.size()]),
-
                     LOCATION_CODE);
-
         }
-
     }
 
     private static List findDeniedPermissions(String[] permissions) {
-
         List needRequestPermissonList = new ArrayList();
-
         for (String perm : permissions) {
-
             if (ContextCompat.checkSelfPermission(activity,
-
                     perm) != PackageManager.PERMISSION_GRANTED
-
                     || ActivityCompat.shouldShowRequestPermissionRationale(
-
                     activity, perm)) {
-
                 needRequestPermissonList.add(perm);
-
             }
-
         }
-
         return needRequestPermissonList;
-
     }
 
     public static void setCheckPermission(MainActivity.OnCheckLocationPermission onCheckLocationPermission){

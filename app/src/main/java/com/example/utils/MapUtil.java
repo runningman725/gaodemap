@@ -14,21 +14,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @ClassName MapUtil
- * @Description 地图导航：可转换坐标，可判断是否安装
- */
-
 public class MapUtil {
 
-    public static final String PN_GAODE_MAP = "com.autonavi.minimap";// 高德地图包名
-    public static final String PN_BAIDU_MAP = "com.baidu.BaiduMap"; // 百度地图包名
-    public static final String PN_TENCENT_MAP = "com.tencent.map"; // 腾讯地图包名
+    public static final String PN_GAODE_MAP = "com.autonavi.minimap";// 꼬더맵 package name
+    public static final String PN_BAIDU_MAP = "com.baidu.BaiduMap"; // 바이두맵 package name
+    public static final String PN_TENCENT_MAP = "com.tencent.map"; // 텅쉰맵 package name
 
-    /**
-     * 检查地图应用是否安装
-     * @return
-     */
     public static boolean isGdMapInstalled(Activity activity){
         return isAvilible(activity,PN_GAODE_MAP);
     }
@@ -41,27 +32,21 @@ public class MapUtil {
         return isAvilible(activity,PN_TENCENT_MAP);
     }
 
-    // 检索地图软件
     public static boolean isAvilible(Context context, String packageName) {
-//获取packagemanager
         final PackageManager packageManager = context.getPackageManager();
-//获取所有已安装程序的包信息
         List<PackageInfo> packageInfos = packageManager.getInstalledPackages(0);
-//用于存储所有已安装程序的包名
         List<String> packageNames = new ArrayList<String>();
-//从pinfo中将包名字逐一取出，压入pName list中
         if (packageInfos != null) {
             for (int i = 0; i < packageInfos.size(); i++) {
                 String packName = packageInfos.get(i).packageName;
                 packageNames.add(packName);
             }
         }
-//判断packageNames中是否有目标程序的包名，有TRUE，没有FALSE
         return packageNames.contains(packageName);
     }
 
 
-    //高德
+    //꼬더
     public static void openGaoDeMap(Activity activity, PoiItem poiItem) {
         if (isGdMapInstalled(activity)) {
             openGaoDeNavi(activity, 0, 0, null, poiItem.getLatLonPoint().getLatitude(),poiItem.getLatLonPoint().getLongitude(),poiItem.getTitle());
@@ -248,5 +233,15 @@ public class MapUtil {
         intent.setPackage(PN_BAIDU_MAP);
         intent.setData(Uri.parse(uriString));
         context.startActivity(intent);
+    }
+
+    public static void openMap(Activity activity, String map, PoiItem poiItem) {
+        if (map.equals(Const.GAODEMAP)) {
+            openGaoDeMap(activity,poiItem);
+        } else if(map.equals(Const.BAIDUMAP)){
+            openBaiDuMap(activity,poiItem);
+        } else {
+            openTencentMap(activity,poiItem);
+        }
     }
 }

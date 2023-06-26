@@ -64,13 +64,7 @@ public class GaoDeSearchResultAdapter extends RecyclerView.Adapter<GaoDeSearchRe
                 CustomDialog.setNavMapChooseListener(new CustomDialog.OnNavMapChooseListener() {
                     @Override
                     public void chooseMap(String map) {
-                        if (map.equals(Const.GAODEMAP)) {
-                            MapUtil.openGaoDeMap(activity,poiItem);
-                        } else if(map.equals(Const.BAIDUMAP)){
-                            MapUtil.openBaiDuMap(activity,poiItem);
-                        } else {
-                            MapUtil.openTencentMap(activity,poiItem);
-                        }
+                        MapUtil.openMap(activity,map,poiItem);
                     }
                 });
             }

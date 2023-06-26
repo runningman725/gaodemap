@@ -14,19 +14,14 @@ public class CustomDialog {
     private static OnNavMapChooseListener onNavMapChooseListener;
 
     public static void showBottomDialog(Activity activity){
-        //1、使用Dialog、设置style
         final Dialog dialog = new Dialog(activity,R.style.DialogTheme);
-        //2、设置布局
         View view = View.inflate(activity, R.layout.dialog_bottom_navmap,null);
         dialog.setContentView(view);
         dialog.setCanceledOnTouchOutside(true);
 
         Window window = dialog.getWindow();
-        //设置弹出位置
         window.setGravity(Gravity.BOTTOM);
-        //设置弹出动画
         window.setWindowAnimations(R.style.main_menu_animStyle);
-        //设置对话框大小
         window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);
         dialog.show();
 
