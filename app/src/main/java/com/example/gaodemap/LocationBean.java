@@ -1,8 +1,8 @@
 package com.example.gaodemap;
 
 public class LocationBean {
-    private String latitude;
-    private String longitude;
+    private double latitude;
+    private double longitude;
     private String province;
     private String coordType;
     private String city;
@@ -25,19 +25,19 @@ public class LocationBean {
     private String locationType;
     private String conScenario;
 
-    public String getLatitude() {
+    public double getLatitude() {
         return latitude;
     }
 
-    public void setLatitude(String latitude) {
+    public void setLatitude(double latitude) {
         this.latitude = latitude;
     }
 
-    public String getLongitude() {
+    public double getLongitude() {
         return longitude;
     }
 
-    public void setLongitude(String longitude) {
+    public void setLongitude(double longitude) {
         this.longitude = longitude;
     }
 

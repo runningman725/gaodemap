@@ -7,8 +7,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.location.Location;
+import android.net.wifi.aware.DiscoverySession;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -19,6 +22,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
@@ -46,13 +50,18 @@ import com.amap.api.services.geocoder.RegeocodeResult;
 import com.amap.api.services.help.Inputtips;
 import com.amap.api.services.help.InputtipsQuery;
 import com.amap.api.services.help.Tip;
+import com.amap.api.services.poisearch.Photo;
 import com.amap.api.services.poisearch.PoiResult;
 import com.amap.api.services.poisearch.PoiResultV2;
 import com.amap.api.services.poisearch.PoiSearch;
 import com.amap.api.services.poisearch.PoiSearchV2;
 import com.example.utils.CheckPermissionUtil;
 import com.example.utils.GenerateSHA1;
+import com.google.gson.Gson;
 
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -125,8 +134,13 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
     }
 
     private void initView() {
-
         et_keyword = findViewById(R.id.et_keyword);
+        rlv_location = findViewById(R.id.rlv_location);
+        searchResultAdapter = new GaoDeSearchResultAdapter(this);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        rlv_location.setLayoutManager(layoutManager);
+        rlv_location.setAdapter(searchResultAdapter);
         CheckPermissionUtil.setCheckPermission(new OnCheckLocationPermission() {
             @Override
             public void permissionGranted() {
@@ -148,8 +162,8 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
                 }
                 if(!content.equals("") && !scrollList){
                     //두번째 param 값이 null이거나 ""이면 도시 아닌 전국 범위에서 검색
-                    InputtipsQuery inputquery = new InputtipsQuery(content, locationBean.getCity());
-                    inputquery.setCityLimit(true);//도시 한정
+                    InputtipsQuery inputquery = new InputtipsQuery(content, "");//locationBean.getCity()
+//                    inputquery.setCityLimit(true);//도시 한정
                     Inputtips inputTips = new Inputtips(MainActivity.this, inputquery);
                     inputTips.setInputtipsListener(new OnInputTipsListener());
                     inputTips.requestInputtipsAsyn();
@@ -180,13 +194,6 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
             throw new RuntimeException(e);
         }
         hideSoftKey(et_keyword);
-        rlv_location = findViewById(R.id.rlv_location);
-        searchResultAdapter = new GaoDeSearchResultAdapter(this);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        rlv_location.setLayoutManager(layoutManager);
-        rlv_location.setAdapter(searchResultAdapter);
-        searchResultAdapter.setData(resultData);
 
     }
 
@@ -357,8 +364,8 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
                     isInputKeySearch = false;
 
                 LocationBean bean = new LocationBean();
-                bean.setLatitude(String.valueOf(amapLocation.getLatitude()));
-                bean.setLongitude(String.valueOf(amapLocation.getLongitude()));
+                bean.setLatitude(amapLocation.getLatitude());
+                bean.setLongitude(amapLocation.getLongitude());
                 bean.setProvince(String.valueOf(amapLocation.getProvince()));
                 bean.setCoordType(String.valueOf(amapLocation.getCoordType()));
                 bean.setCity(String.valueOf(amapLocation.getCity()));
@@ -409,8 +416,18 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
         resultData.clear();
         resultData.add(firstItem);
         resultData.addAll(poiItems);
-        Log.e(TAG, "updateListview: resultData=="+resultData);
+        Log.e(TAG, "updateListview: poiItems=="+new Gson().toJson(poiItems));
+        for(PoiItem item:poiItems){
+            Log.e(TAG, "updateListview: item==="+item.getPhotos().size());
+            List<Photo> photos = item.getPhotos();
+            for (int i = 0; i < photos.size(); i++) {
+                String title = photos.get(i).getTitle();
+                String url = photos.get(i).getUrl();
+                Log.e(TAG, "updateListview: photo==="+url);
+            }
+        }
         searchResultAdapter.setData(resultData);
+        searchResultAdapter.setLatLng(locationBean.getLongitude(),locationBean.getLatitude());
         if (editText) {
             rlv_location.setVisibility(View.VISIBLE);
         }
@@ -432,6 +449,25 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
                 }
             }
         });
+    }
+    //加载图片
+    public Bitmap getURLimage(String url) {
+        Bitmap bmp = null;
+        try {
+            URL myurl = new URL(url);
+            // 获得连接
+            HttpURLConnection conn = (HttpURLConnection) myurl.openConnection();
+            conn.setConnectTimeout(6000);//设置超时
+            conn.setDoInput(true);
+            conn.setUseCaches(false);//不缓存
+            conn.connect();
+            InputStream is = conn.getInputStream();//获得图片的数据流
+            bmp = BitmapFactory.decodeStream(is);
+            is.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return bmp;
     }
 
     @Override
@@ -462,8 +498,9 @@ public class MainActivity extends Activity implements LocationSource, AMapLocati
     private void doSearchQuery() {
         currentPage = 0;
         //첫 번째 인자는 검색 문자열을 나타내고, 두 번째 인자는 poi 검색 유형을 나타내며, 세 번째 인자는 poi 검색 영역을 나타냅니다(빈 문자열은 전국을 나타냄).
-        query = new PoiSearch.Query("", "", locationBean.getCityCode());
+        query = new PoiSearch.Query("", "","");//locationBean.getCityCode()
         query.setCityLimit(true);
+        query.setExtensions("all");
         // 페이지당 최대 몇 개의 poiitem을 반환할지 설정합니다
         query.setPageSize(20);
         query.setPageNum(currentPage);
